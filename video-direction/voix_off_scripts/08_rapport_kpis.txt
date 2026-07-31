@@ -1,0 +1,1 @@
+Zizou est notre agent de contrôle qualité, pleinement opérationnel. Son rapport affiche les indicateurs clés : campagnes vérifiées, corrections détectées, anomalies remontées, filtrables par plateforme et par période.

@@ -1,0 +1,1 @@
+L'onglet intégrations liste tous les outils connectés à l'agent : canal Slack dédié, board Monday, sources de données. Une vision claire de ce sur quoi l'agent s'appuie pour travailler.

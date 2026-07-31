@@ -1,0 +1,1 @@
+Dans la fiche d'un agent — ici Zizou — un simple interrupteur active ou met en pause son fonctionnement. Aucune intervention technique : un clic suffit, et l'action est tracée.

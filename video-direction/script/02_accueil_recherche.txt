@@ -1,0 +1,1 @@
+Sur l'accueil, toute l'équipe virtuelle apparaît en un coup d'œil : statut, dernier run, version des instructions. La recherche et les filtres permettent de retrouver un agent actif, en pause, en cours d'exécution ou en erreur en un clic.

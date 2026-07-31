@@ -1,0 +1,1 @@
+Un badge rouge s'affiche directement sur la carte dès qu'un agent détecte une erreur dans les dernières 24 heures. Impossible de la manquer : le problème saute aux yeux avant même d'ouvrir la fiche.

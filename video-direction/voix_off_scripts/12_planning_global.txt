@@ -1,0 +1,1 @@
+Une vue planning globale affiche la semaine type de toute l'équipe d'agents, agent par agent, heure par heure — avec un repérage visuel des créneaux qui se chevauchent.

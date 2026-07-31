@@ -1,0 +1,1 @@
+La fréquence de passage de chaque agent se règle avec un menu horaire visuel : on choisit les jours et les heures en cliquant sur des chips, sans écrire une seule ligne de cron.

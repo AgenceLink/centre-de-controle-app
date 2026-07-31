@@ -1,0 +1,1 @@
+Chaque jour, nos agents IA travaillent pour l'équipe Traffic. Ils surveillent les campagnes, vérifient les budgets, alertent en cas de problème. Mais qui les pilote ? Voici le centre de contrôle : une seule interface pour voir, régler et suivre tous nos agents, sans jamais toucher au code.

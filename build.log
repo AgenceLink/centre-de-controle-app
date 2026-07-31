@@ -1,0 +1,24 @@
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+   ▲ Next.js 15.1.6
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/10) ...
+   Generating static pages (2/10) 
+   Generating static pages (4/10) 
+   Generating static pages (7/10) 
+ ✓ Generating static pages (10/10)
+
+> Build error occurred
+[Error: EPERM: operation not permitted, unlink '/sessions/affectionate-dazzling-newton/mnt/outputs/app/.next/export/404.html'] {
+  errno: -1,
+  code: 'EPERM',
+  syscall: 'unlink',
+  path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/.next/export/404.html'
+}

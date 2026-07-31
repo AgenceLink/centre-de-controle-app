@@ -1,0 +1,1 @@
+La gestion des utilisateurs se fait aussi depuis l'interface : ajout, rôles, accès admin ou lecture — tout est centralisé, sans dépendre d'un développeur.

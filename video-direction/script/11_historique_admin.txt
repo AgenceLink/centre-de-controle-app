@@ -1,0 +1,1 @@
+Pour les administrateurs, un historique complet trace chaque action : qui a changé le planning, modifié les instructions ou relancé un agent, et quand.

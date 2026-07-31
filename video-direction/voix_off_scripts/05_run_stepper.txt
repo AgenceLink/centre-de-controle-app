@@ -1,0 +1,1 @@
+Un run peut être lancé manuellement à tout moment. Sa progression s'affiche en direct, étape par étape, jusqu'au résultat final.

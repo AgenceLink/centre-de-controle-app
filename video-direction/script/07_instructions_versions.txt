@@ -1,0 +1,1 @@
+Les instructions de l'agent sont versionnées. La version active s'affiche immédiatement, les précédentes restent accessibles en un clic, avec un comparatif des changements et un retour en arrière possible à tout moment.

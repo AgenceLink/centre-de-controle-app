@@ -1,0 +1,1 @@
+Chaque rapport peut être exporté en un clic, au format CSV pour l'analyse ou en PDF pour le partager tel quel.

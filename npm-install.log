@@ -1,0 +1,235 @@
+npm warn deprecated next@15.1.6: This version has a security vulnerability. Please upgrade to a patched version. See https://nextjs.org/blog/CVE-2025-66478 for more details.
+npm warn cleanup Failed to remove some directories [
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-win32-x64',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-win32-x64'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-win32-x64'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-win32-ia32',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-win32-ia32'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-win32-ia32'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-linux-x64',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-linux-x64'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-linux-x64'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-linux-arm',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-linux-arm'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-linux-arm'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-libvips-linux-s390x',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-libvips-linux-s390x'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-libvips-linux-s390x'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-libvips-linux-x64',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-libvips-linux-x64'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-libvips-linux-x64'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-libvips-darwin-x64',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-libvips-darwin-x64'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-libvips-darwin-x64'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-libvips-linux-arm',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-libvips-linux-arm'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-libvips-linux-arm'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-darwin-arm64',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-darwin-arm64'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-darwin-arm64'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-libvips-darwin-arm64',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-libvips-darwin-arm64'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-libvips-darwin-arm64'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-darwin-x64',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-darwin-x64'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-darwin-x64'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-linux-s390x',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-linux-s390x'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-linux-s390x'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@next/swc-win32-x64-msvc',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@next/swc-win32-x64-msvc'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@next/swc-win32-x64-msvc'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@next/swc-win32-arm64-msvc',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@next/swc-win32-arm64-msvc'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@next/swc-win32-arm64-msvc'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-libvips-linuxmusl-x64',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-libvips-linuxmusl-x64'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-libvips-linuxmusl-x64'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-linuxmusl-arm64',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-linuxmusl-arm64'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-linuxmusl-arm64'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@next/swc-linux-x64-musl',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@next/swc-linux-x64-musl'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@next/swc-linux-x64-musl'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@next/swc-darwin-x64',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@next/swc-darwin-x64'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@next/swc-darwin-x64'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-libvips-linuxmusl-arm64',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-libvips-linuxmusl-arm64'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-libvips-linuxmusl-arm64'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@next/swc-darwin-arm64',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@next/swc-darwin-arm64'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@next/swc-darwin-arm64'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-linuxmusl-x64',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-linuxmusl-x64'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-linuxmusl-x64'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@next/swc-linux-x64-gnu',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@next/swc-linux-x64-gnu'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@next/swc-linux-x64-gnu'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-wasm32',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-wasm32'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@img/sharp-wasm32'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@next/swc-linux-arm64-musl',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@next/swc-linux-arm64-musl'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@next/swc-linux-arm64-musl'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@emnapi/runtime',
+npm warn cleanup     [Error: EPERM: operation not permitted, unlink '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@emnapi/runtime/index.js'] {
+npm warn cleanup       errno: -1,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'unlink',
+npm warn cleanup       path: '/sessions/affectionate-dazzling-newton/mnt/outputs/app/node_modules/@emnapi/runtime/index.js'
+npm warn cleanup     }
+npm warn cleanup   ]
+npm warn cleanup ]
+
+added 29 packages in 17s
+npm notice
+npm notice New major version of npm available! 10.9.8 -> 12.0.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.1
+npm notice To update run: npm install -g npm@12.0.1
+npm notice
