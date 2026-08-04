@@ -1050,8 +1050,88 @@ function ReportTab({ agentId, theme }) {
 }
 
 /* ---------- page principale ---------- */
+/* ---------- onglet missions ---------- */
+function MissionCard({ m, theme }) {
+  const running = m.is_running;
+  const last = m.last_run;
+  const statusStyle = running
+    ? { background: `${theme.color}18`, color: theme.colorDark }
+    : last?.status === "success"
+    ? { background: "rgba(46, 158, 91, 0.1)", color: "#2E9E5B" }
+    : last?.status === "error"
+    ? { background: "rgba(214,69,69,0.08)", color: "#D64545" }
+    : { background: "rgba(146, 146, 146, 0.14)", color: "#5E5E5E" };
+  const statusLabel = running ? "en cours d'exécution" : last?.status === "success" ? "dernier run réussi" : last?.status === "error" ? "dernier run en échec" : "aucun run";
+
+  return (
+    <Link href={`/missions/${m.mission_key}`} className="card agent-card">
+      <div className="agent-card-head">
+        <div className="mascot-wrap">
+          <div className="mascot-ring" style={{ width: 48, height: 48, border: `2.5px solid ${theme.color}` }}>
+            <span style={{ fontSize: 20 }}>🎯</span>
+          </div>
+        </div>
+        <div>
+          <div className="agent-card-name">{m.name || m.mission_key}</div>
+          <div className="agent-card-role">{m.reference_only ? "mission de référence" : "mission terrain"}</div>
+        </div>
+      </div>
+      <span className="status-pill" style={statusStyle}>
+        {running ? <IconRefresh size={11} /> : <span className="dot" style={{ width: 7, height: 7, borderRadius: "50%", background: "currentColor" }} />}
+        {statusLabel}
+      </span>
+      <div className="chip-row">
+        <span className="stat-chip"><IconClock size={12} />{m.reference_only ? "pas de planning" : (m.base_times || "—")}</span>
+        <span className="stat-chip">{last ? timeAgo(last.started_at) : "jamais exécutée"}</span>
+        <span className="stat-chip mono">v{m.instructions_version ?? "—"}</span>
+      </div>
+    </Link>
+  );
+}
+
+function MissionsTab({ agentId, theme }) {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetch(`/api/agents/${agentId}/missions`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => (j.ok ? setData(j.missions) : setError(j.error)))
+      .catch(() => setError("réseau indisponible"));
+  }, [agentId]);
+
+  if (error) return <div className="card block"><p className="form-error">{error}</p></div>;
+  if (!data) return <div className="card block"><p className="dim">chargement…</p></div>;
+
+  const terrain = data.filter((m) => !m.reference_only);
+  const reference = data.filter((m) => m.reference_only);
+
+  return (
+    <div>
+      {data.length === 0 ? (
+        <div className="card block"><p className="dim">aucune mission configurée pour cet agent.</p></div>
+      ) : (
+        <>
+          <div className="grid">
+            {terrain.map((m) => <MissionCard key={m.mission_key} m={m} theme={theme} />)}
+          </div>
+          {reference.length > 0 && (
+            <>
+              <div className="block-sub-title" style={{ marginTop: 20, marginBottom: 12 }}>📖 missions de référence</div>
+              <div className="grid">
+                {reference.map((m) => <MissionCard key={m.mission_key} m={m} theme={theme} />)}
+              </div>
+            </>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 const TABS = [
   { id: "overview", label: "🪪 vue d'ensemble" },
+  { id: "missions", label: "🎯 missions" },
   { id: "report", label: "📊 rapport" },
   { id: "planning", label: "🕒 planification" },
   { id: "instructions", label: "📝 instructions" },
@@ -1139,7 +1219,6 @@ export default function AgentDetail() {
             <>
               <span>{data.viewer.name}</span>
               <span className="role-chip">{data.viewer.role}</span>
-              <Link href="/missions" className="btn-ghost admin-link">🎯 missions</Link>
               <Link href="/planning" className="btn-ghost admin-link">📅 planning</Link>
               {data.viewer.role === "admin" && (
                 <Link href="/users" className="btn-ghost admin-link">👥 utilisateurs</Link>
@@ -1175,6 +1254,7 @@ export default function AgentDetail() {
 
           <div className="tab-panel">
             {tab === "overview" && <OverviewTab agent={data.agent} agentId={agentId} canAck={isAdmin || data?.viewer?.role === "operateur"} onAction={runAction} />}
+            {tab === "missions" && <MissionsTab agentId={agentId} theme={theme} />}
             {tab === "report" && <ReportTab agentId={agentId} theme={theme} />}
             {tab === "planning" && <PlanningTab agent={data.agent} canWrite={canSchedule} onAction={runAction} />}
             {tab === "instructions" && (

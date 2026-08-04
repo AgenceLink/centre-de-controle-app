@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { agentTheme } from "@/lib/agentTheme";
-import { IconCheck, IconX, IconRefresh, IconClock } from "@/lib/icons";
+import { IconCheck, IconX, IconRefresh, IconClock, IconPlus } from "@/lib/icons";
 
 function timeAgo(iso) {
   if (!iso) return "—";
@@ -83,59 +83,177 @@ function ConfirmModal({ title, message, confirmWord, danger, busy, onConfirm, on
 }
 
 /* ---------- onglet vue d'ensemble ---------- */
-function OverviewTab({ mission }) {
-  const [runs, setRuns] = useState(null);
-  const [error, setError] = useState(null);
-  const [openRun, setOpenRun] = useState(null);
-  const [events, setEvents] = useState({});
+function OverviewTab({ mission, theme }) {
+  const running = mission.is_running;
+  const last = mission.last_run;
+  return (
+    <div className="card block">
+      <div className="block-title">🪪 résumé</div>
+      <div className="int-grid">
+        <div className="int-card"><div className="l">statut</div><div className="v">{running ? "en cours d'exécution" : "au repos"}</div></div>
+        <div className="int-card"><div className="l">agent</div><div className="v">{mission.agent_id}</div></div>
+        <div className="int-card"><div className="l">type</div><div className="v">{mission.reference_only ? "mission de référence" : "mission terrain"}</div></div>
+        <div className="int-card"><div className="l">version instructions</div><div className="v">v{mission.instructions_version ?? "—"}</div></div>
+      </div>
+      {running && mission.current_run ? (
+        <div className="mini-progress" style={{ marginTop: 14 }}>
+          <div
+            className="mini-progress-fill"
+            style={{
+              background: theme.color,
+              width: mission.current_run.steps_total > 0 ? `${Math.round((mission.current_run.steps_done / mission.current_run.steps_total) * 100)}%` : "20%",
+            }}
+          />
+        </div>
+      ) : last ? (
+        <p className="block-sub-title" style={{ marginTop: 14 }}>
+          dernier run {statusMeta(last.status).label} · {timeAgo(last.started_at)} · {triggerLabel(last.trigger_type)}
+        </p>
+      ) : (
+        <p className="dim" style={{ marginTop: 14 }}>cette mission n'a encore jamais tourné.</p>
+      )}
+      {last?.summary && <p className="block-desc" style={{ marginTop: 8 }}>{last.summary}</p>}
+    </div>
+  );
+}
 
-  useEffect(() => {
-    fetch(`/api/missions/${mission.mission_key}/runs`, { cache: "no-store" })
-      .then((r) => r.json())
-      .then((j) => (j.ok ? setRuns(j.runs) : setError(j.error)))
-      .catch(() => setError("réseau indisponible"));
-  }, [mission.mission_key]);
+/* ---------- onglet planification ---------- */
+function parseTimes(baseTimes) {
+  return String(baseTimes || "").split(",").map((t) => t.trim()).filter(Boolean);
+}
+const MINUTE_OPTIONS = ["00", "15", "30", "45"];
+const HOUR_OPTIONS_M = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
 
-  const toggleRun = async (r) => {
-    if (openRun === r.run_id) { setOpenRun(null); return; }
-    setOpenRun(r.run_id);
-    if (events[r.run_id]) return;
-    const res = await fetch(`/api/missions/${mission.mission_key}/run-events?run_id=${encodeURIComponent(r.run_id)}`, { cache: "no-store" });
-    const j = await res.json();
-    if (j.ok) setEvents((e) => ({ ...e, [r.run_id]: j.events }));
+function MissionPlanningPreview({ mission }) {
+  const times = parseTimes(mission.base_times);
+  if (mission.reference_only) return <p className="dim">mission de référence — pas de planning propre, jamais déclenchée directement.</p>;
+  if (!times.length) return <p className="dim">aucun horaire configuré</p>;
+  return (
+    <div>
+      <div className="chip-row">
+        {times.map((t) => <span key={t} className="chip selected" style={{ cursor: "default" }}>{t}</span>)}
+      </div>
+      <div className="schedule-preview" style={{ marginTop: 12 }}>
+        🔁 retry {mission.retry_interval_minutes || "—"} min jusqu'à {mission.retry_cutoff || "—"}
+      </div>
+    </div>
+  );
+}
+
+function PlanningTab({ mission, missionName, canWrite, onAction }) {
+  const [editing, setEditing] = useState(false);
+  const [times, setTimes] = useState([]);
+  const [addHour, setAddHour] = useState("07");
+  const [addMinute, setAddMinute] = useState("00");
+  const [retryInterval, setRetryInterval] = useState(60);
+  const [retryCutoff, setRetryCutoff] = useState("17:00");
+  const [confirmSave, setConfirmSave] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState(null);
+
+  const startEdit = () => {
+    setTimes(parseTimes(mission.base_times));
+    setRetryInterval(mission.retry_interval_minutes || 60);
+    setRetryCutoff(mission.retry_cutoff || "17:00");
+    setEditing(true);
   };
+
+  const addTime = () => {
+    const t = `${addHour}:${addMinute}`;
+    if (!times.includes(t)) setTimes([...times, t].sort());
+  };
+  const removeTime = (t) => setTimes(times.filter((x) => x !== t));
+
+  const save = async () => {
+    setBusy(true);
+    const ok = await onAction("set_mission_schedule", { base_times: times.join(","), retry_interval_minutes: Number(retryInterval), retry_cutoff: retryCutoff });
+    setBusy(false);
+    setConfirmSave(false);
+    if (ok) { setEditing(false); setMsg({ ok: true, text: "déclencheurs mis à jour" }); }
+    else setMsg({ ok: false, text: "échec de l'enregistrement" });
+  };
+
+  if (mission.reference_only && !editing) {
+    return (
+      <div className="card block">
+        <div className="block-title">🕒 déclencheurs</div>
+        <p className="dim">mission de référence — pas de planning propre, jamais déclenchée directement par le dispatcher.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="card block">
       <div className="block-title">
-        derniers runs
-        {mission.reference_only && <span className="block-sub">mission de référence — jamais exécutée directement</span>}
+        🕒 déclencheurs
+        {canWrite && !editing && (
+          <button className="btn-ghost btn-inline" onClick={startEdit}>modifier</button>
+        )}
       </div>
-      {error && <p className="form-error">{error}</p>}
-      {!runs && !error && <p className="dim">chargement…</p>}
-      {runs && runs.length === 0 && <p className="dim">aucun run enregistré pour cette mission</p>}
-      {runs && runs.length > 0 && (
-        <div className="version-list">
-          {runs.slice(0, 15).map((r) => {
-            const meta = statusMeta(r.status);
-            return (
-              <div key={r.run_id} className="version-row">
-                <button className="version-head" onClick={() => toggleRun(r)}>
-                  <span className={`version-badge ${meta.cls}`}>{meta.icon} {meta.label}</span>
-                  <span className="version-info">
-                    <span className="version-comment">{formatDate(r.started_at)} · {triggerLabel(r.trigger_type)}{r.attempt_number > 1 ? ` · tentative ${r.attempt_number}` : ""}</span>
-                    <span className="version-sub">{r.summary || "pas de résumé"}</span>
-                  </span>
-                </button>
-                {openRun === r.run_id && (
-                  <pre className="version-content">
-                    {!events[r.run_id] ? "chargement…" : events[r.run_id].length === 0 ? "aucun événement" : events[r.run_id].map((e, i) => `${formatDate(e.timestamp)} — ${e.event_type}${e.details ? " : " + e.details : ""}`).join("\n")}
-                  </pre>
-                )}
-              </div>
-            );
-          })}
+      {msg && <p className={msg.ok ? "form-ok" : "form-error"}>{msg.text}</p>}
+
+      {editing ? (
+        <div className="editor">
+          <div className="field">
+            <label>horaires de déclenchement</label>
+            <div className="chip-row">
+              {times.length === 0 && <span className="dim" style={{ fontSize: 13 }}>aucun horaire — ajoute au moins un créneau</span>}
+              {times.map((t) => (
+                <span key={t} className="chip selected">
+                  {t}
+                  <button type="button" className="chip-remove" onClick={() => removeTime(t)} aria-label={`retirer ${t}`}>
+                    <IconX size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="hour-picker" style={{ marginTop: 8 }}>
+              <select value={addHour} onChange={(e) => setAddHour(e.target.value)}>
+                {HOUR_OPTIONS_M.map((h) => <option key={h} value={h}>{h}h</option>)}
+              </select>
+              <select value={addMinute} onChange={(e) => setAddMinute(e.target.value)}>
+                {MINUTE_OPTIONS.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+              <button type="button" className="btn-ghost" onClick={addTime}><IconPlus size={13} />ajouter</button>
+            </div>
+          </div>
+
+          <div className="field" style={{ marginTop: 14 }}>
+            <label>retry en cas d'échec</label>
+            <div className="chip-row">
+              <select value={retryInterval} onChange={(e) => setRetryInterval(e.target.value)}>
+                {[30, 45, 60, 90, 120].map((m) => <option key={m} value={m}>toutes les {m} min</option>)}
+              </select>
+              <span className="dim" style={{ fontSize: 13, alignSelf: "center" }}>jusqu'à</span>
+              <input
+                type="text"
+                className="confirm-input"
+                style={{ width: 90 }}
+                value={retryCutoff}
+                onChange={(e) => setRetryCutoff(e.target.value)}
+                placeholder="17:00"
+              />
+            </div>
+          </div>
+
+          <div className="modal-actions">
+            <button className="btn-ghost" onClick={() => setEditing(false)} disabled={busy}>annuler</button>
+            <button className="btn-primary" onClick={() => setConfirmSave(true)} disabled={times.length === 0 || busy}>enregistrer</button>
+          </div>
         </div>
+      ) : (
+        <MissionPlanningPreview mission={mission} />
+      )}
+
+      {confirmSave && (
+        <ConfirmModal
+          title="modifier les déclencheurs"
+          message={`Retape le nom de la mission (« ${missionName} ») pour appliquer le nouveau planning. Une notification sera envoyée sur le canal Slack de l'agent.`}
+          confirmWord={missionName}
+          busy={busy}
+          onConfirm={save}
+          onCancel={() => setConfirmSave(false)}
+        />
       )}
     </div>
   );
@@ -223,7 +341,7 @@ function InstructionsTab({ missionKey, missionName, currentVersion, canWrite, on
   return (
     <div className="card block">
       <div className="block-title">
-        instructions <span className="block-sub">version courante v{currentVersion ?? "—"}</span>
+        📝 instructions <span className="block-sub">version courante v{currentVersion ?? "—"}</span>
         {canWrite && !editing && (
           <button className="btn-ghost btn-inline" onClick={startEdit}>éditer</button>
         )}
@@ -321,9 +439,86 @@ function InstructionsTab({ missionKey, missionName, currentVersion, canWrite, on
   );
 }
 
+/* ---------- onglet intégrations ---------- */
+function IntegrationsTab({ mission }) {
+  return (
+    <div className="card block">
+      <div className="block-title">🔌 intégrations</div>
+      <div className="int-grid">
+        <div className="int-card"><div className="l">agent propriétaire</div><div className="v"><Link href={`/agents/${mission.agent_id}`} className="dim">{mission.agent_id} →</Link></div></div>
+        <div className="int-card"><div className="l">clé technique</div><div className="v mono">{mission.mission_key}</div></div>
+        <div className="int-card"><div className="l">table instructions</div><div className="v mono">mission_instructions</div></div>
+        <div className="int-card"><div className="l">table runs</div><div className="v mono">mission_runs / mission_run_events</div></div>
+      </div>
+      <p className="block-desc" style={{ marginTop: 12 }}>
+        Les outils et passerelles réellement utilisés par cette mission (Monday, plateformes publicitaires, Slack…) sont ceux de l'agent {mission.agent_id} — voir son onglet intégrations.
+      </p>
+    </div>
+  );
+}
+
+/* ---------- onglet historique (runs + événements) ---------- */
+function HistoryTab({ mission }) {
+  const [runs, setRuns] = useState(null);
+  const [error, setError] = useState(null);
+  const [openRun, setOpenRun] = useState(null);
+  const [events, setEvents] = useState({});
+
+  useEffect(() => {
+    fetch(`/api/missions/${mission.mission_key}/runs`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => (j.ok ? setRuns(j.runs) : setError(j.error)))
+      .catch(() => setError("réseau indisponible"));
+  }, [mission.mission_key]);
+
+  const toggleRun = async (r) => {
+    if (openRun === r.run_id) { setOpenRun(null); return; }
+    setOpenRun(r.run_id);
+    if (events[r.run_id]) return;
+    const res = await fetch(`/api/missions/${mission.mission_key}/run-events?run_id=${encodeURIComponent(r.run_id)}`, { cache: "no-store" });
+    const j = await res.json();
+    if (j.ok) setEvents((e) => ({ ...e, [r.run_id]: j.events }));
+  };
+
+  return (
+    <div className="card block">
+      <div className="block-title">🕓 derniers runs</div>
+      {error && <p className="form-error">{error}</p>}
+      {!runs && !error && <p className="dim">chargement…</p>}
+      {runs && runs.length === 0 && <p className="dim">aucun run enregistré pour cette mission</p>}
+      {runs && runs.length > 0 && (
+        <div className="version-list">
+          {runs.slice(0, 20).map((r) => {
+            const meta = statusMeta(r.status);
+            return (
+              <div key={r.run_id} className="version-row">
+                <button className="version-head" onClick={() => toggleRun(r)}>
+                  <span className={`version-badge ${meta.cls}`}>{meta.icon} {meta.label}</span>
+                  <span className="version-info">
+                    <span className="version-comment">{formatDate(r.started_at)} · {triggerLabel(r.trigger_type)}{r.attempt_number > 1 ? ` · tentative ${r.attempt_number}` : ""}</span>
+                    <span className="version-sub">{r.summary || "pas de résumé"}</span>
+                  </span>
+                </button>
+                {openRun === r.run_id && (
+                  <pre className="version-content">
+                    {!events[r.run_id] ? "chargement…" : events[r.run_id].length === 0 ? "aucun événement" : events[r.run_id].map((e, i) => `${formatDate(e.timestamp)} — ${e.event_type}${e.details ? " : " + e.details : ""}`).join("\n")}
+                  </pre>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const TABS = [
-  { id: "overview", label: "vue d'ensemble" },
-  { id: "instructions", label: "instructions" },
+  { id: "overview", label: "🪪 vue d'ensemble" },
+  { id: "planning", label: "🕒 planification" },
+  { id: "instructions", label: "📝 instructions" },
+  { id: "integrations", label: "🔌 intégrations" },
+  { id: "history", label: "🕓 historique" },
 ];
 
 export default function MissionDetail() {
@@ -384,6 +579,7 @@ export default function MissionDetail() {
   const isAdmin = data?.viewer?.role === "admin";
   const perms = data?.viewer?.permissions;
   const canInstructions = isAdmin || perms?.instructions === true;
+  const canSchedule = isAdmin || perms?.schedule === true;
   const theme = data ? agentTheme(data.mission.agent_id) : null;
   const missionName = data ? (data.mission.name || data.mission.mission_key) : "";
 
@@ -410,7 +606,8 @@ export default function MissionDetail() {
       </div>
       <div className="vague-strip" />
 
-      <Link href="/missions" className="back-link">← missions</Link>
+      {data && <Link href={`/agents/${data.mission.agent_id}`} className="back-link">← {data.mission.agent_id}</Link>}
+      {!data && <Link href="/" className="back-link">← vue d'ensemble</Link>}
 
       {error && <p className="form-error">{error}</p>}
       {!data && !error && <p style={{ color: "var(--texte)" }}>chargement…</p>}
@@ -422,14 +619,6 @@ export default function MissionDetail() {
               <span style={{ fontSize: 22 }}>🎯</span>
               {missionName}
               {data.mission.reference_only && <span className="role-chip">référence</span>}
-            </div>
-            <div className="chip-row" style={{ marginTop: 8 }}>
-              <span className="stat-chip"><IconClock size={12} />{data.mission.reference_only ? "pas de planning" : (data.mission.base_times || "—")}</span>
-              <span className="stat-chip">agent : {data.mission.agent_id}</span>
-              <span className="stat-chip mono">v{data.mission.instructions_version ?? "—"}</span>
-              {!data.mission.reference_only && (
-                <span className="stat-chip">retry {data.mission.retry_interval_minutes} min jusqu'à {data.mission.retry_cutoff}</span>
-              )}
             </div>
             {msg && <p className={msg.ok ? "form-ok" : "form-error"} style={{ marginTop: 8 }}>{msg.text}</p>}
           </div>
@@ -448,7 +637,10 @@ export default function MissionDetail() {
           </div>
 
           <div className="tab-panel">
-            {tab === "overview" && <OverviewTab mission={data.mission} />}
+            {tab === "overview" && <OverviewTab mission={data.mission} theme={theme} />}
+            {tab === "planning" && (
+              <PlanningTab mission={data.mission} missionName={missionName} canWrite={canSchedule} onAction={runAction} />
+            )}
             {tab === "instructions" && (
               <InstructionsTab
                 missionKey={missionKey}
@@ -458,6 +650,8 @@ export default function MissionDetail() {
                 onAction={runAction}
               />
             )}
+            {tab === "integrations" && <IntegrationsTab mission={data.mission} />}
+            {tab === "history" && <HistoryTab mission={data.mission} />}
           </div>
         </>
       )}
