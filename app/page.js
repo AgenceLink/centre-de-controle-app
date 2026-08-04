@@ -153,6 +153,7 @@ export default function Home() {
             <>
               <span>{data.viewer.name}</span>
               <span className="role-chip">{data.viewer.role}</span>
+              <Link href="/missions" className="btn-ghost admin-link">🎯 missions</Link>
               <Link href="/planning" className="btn-ghost admin-link">📅 planning</Link>
               {data.viewer.role === "admin" && (
                 <Link href="/users" className="btn-ghost admin-link">👥 utilisateurs</Link>
