@@ -1144,21 +1144,23 @@ function MissionsPlanningTab({ agentId, theme }) {
       .catch(() => setError("réseau indisponible"));
   }, [agentId]);
 
-  const { events, hours } = useMemo(() => {
-    if (!data) return { events: [], hours: [] };
+  const { events, slots } = useMemo(() => {
+    if (!data) return { events: [], slots: [] };
     const evs = [];
     data.filter((m) => m.active && !m.reference_only && m.base_times).forEach((m) => {
       String(m.base_times || "").split(",").map((t) => t.trim()).filter(Boolean).forEach((t) => {
-        const h = parseInt(t.split(":")[0], 10);
-        if (isNaN(h)) return;
-        MP_DAY_ORDER.forEach((d) => evs.push({ day: d, hour: h, time: t, mission: m }));
+        const [hh, mm] = t.split(":").map((x) => parseInt(x, 10));
+        if (isNaN(hh)) return;
+        const slot = hh + ((mm || 0) >= 30 ? 0.5 : 0);
+        MP_DAY_ORDER.forEach((d) => evs.push({ day: d, slot, time: t, mission: m }));
       });
     });
-    const hrs = Array.from(new Set(evs.map((e) => e.hour))).sort((a, b) => a - b);
-    return { events: evs, hours: hrs };
+    const sl = Array.from(new Set(evs.map((e) => e.slot))).sort((a, b) => a - b);
+    return { events: evs, slots: sl };
   }, [data]);
 
-  const cellEvents = (day, hour) => events.filter((e) => e.day === day && e.hour === hour);
+  const slotLabel = (s) => `${String(Math.floor(s)).padStart(2, "0")}:${s % 1 === 0 ? "00" : "30"}`;
+  const cellEvents = (day, slot) => events.filter((e) => e.day === day && e.slot === slot);
 
   if (error) return <div className="card block"><p className="form-error">{error}</p></div>;
   if (!data) return <div className="card block"><p className="dim">chargement…</p></div>;
@@ -1166,45 +1168,45 @@ function MissionsPlanningTab({ agentId, theme }) {
   return (
     <div>
       <p className="dim" style={{ fontSize: 12, marginBottom: 14 }}>chaque mission se déclenche tous les jours aux horaires indiqués (+ relances en cas d'échec, jusqu'à l'heure de cutoff propre à chaque mission). modifiable depuis l'onglet planification de chaque mission.</p>
-      {hours.length === 0 ? (
+      {slots.length === 0 ? (
         <div className="card block"><p className="dim">aucune mission planifiée pour l'instant.</p></div>
       ) : (
-        <div className="card block" style={{ overflowX: "auto" }}>
-          <table className="rpt-table" style={{ minWidth: 1180, borderCollapse: "separate", borderSpacing: 0 }}>
+        <div className="card block" style={{ overflowX: "auto", padding: 20 }}>
+          <table className="rpt-table" style={{ width: "100%", minWidth: 1660, tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}>
             <thead>
               <tr>
-                <th style={{ width: 64 }}></th>
-                {MP_DAY_ORDER.map((d) => <th key={d} style={{ fontSize: 14, padding: "12px 10px" }}>{MP_DAY_LABELS[d]}</th>)}
+                <th style={{ width: 84 }}></th>
+                {MP_DAY_ORDER.map((d) => <th key={d} style={{ fontSize: 16, padding: "16px 12px" }}>{MP_DAY_LABELS[d]}</th>)}
               </tr>
             </thead>
             <tbody>
-              {hours.map((h) => (
-                <tr key={h}>
-                  <th style={{ background: "var(--fond)", color: "var(--gris)", fontWeight: 500, whiteSpace: "nowrap", verticalAlign: "top", padding: "14px 10px", fontSize: 13 }}>{h}h</th>
+              {slots.map((s) => (
+                <tr key={s}>
+                  <th style={{ background: "var(--fond)", color: "var(--gris)", fontWeight: 500, whiteSpace: "nowrap", verticalAlign: "top", padding: "18px 12px", fontSize: 14 }}>{slotLabel(s)}</th>
                   {MP_DAY_ORDER.map((d) => {
-                    const cell = cellEvents(d, h);
+                    const cell = cellEvents(d, s);
                     const collision = cell.length > 1;
                     return (
-                      <td key={d} style={{ minWidth: 150, minHeight: 56, verticalAlign: "top", padding: "10px 8px", ...(collision ? { background: "rgba(214,69,69,0.06)" } : {}) }}>
+                      <td key={d} style={{ minWidth: 200, height: 72, verticalAlign: "top", padding: "14px 12px", ...(collision ? { background: "rgba(214,69,69,0.06)" } : {}) }}>
                         {cell.length === 0 ? (
                           <span className="dim">—</span>
                         ) : (
-                          <div style={{ display: "flex", flexDirection: "column", flexWrap: "wrap", gap: 6 }}>
+                          <div style={{ display: "flex", flexDirection: "column", flexWrap: "wrap", gap: 8 }}>
                             {cell.map((e, i) => (
                               <Link
                                 key={i}
                                 href={`/missions/${e.mission.mission_key}`}
                                 title={`${MP_DAY_LABELS[d]} ${e.time} — ${e.mission.name || e.mission.mission_key}`}
                                 style={{
-                                  display: "inline-flex", flexDirection: "column", alignItems: "flex-start", gap: 1, fontSize: 12,
-                                  background: `${theme.color}18`, color: theme.colorDark, borderRadius: 8, padding: "4px 9px",
+                                  display: "inline-flex", flexDirection: "column", alignItems: "flex-start", gap: 2, fontSize: 13,
+                                  background: `${theme.color}18`, color: theme.colorDark, borderRadius: 8, padding: "6px 11px",
                                 }}
                               >
-                                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 600 }}>
-                                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: theme.color, display: "inline-block", flexShrink: 0 }} />
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}>
+                                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: theme.color, display: "inline-block", flexShrink: 0 }} />
                                   {(e.mission.name || e.mission.mission_key).toLowerCase()}
                                 </span>
-                                <span style={{ fontSize: 10, opacity: 0.75, marginLeft: 11 }}>{e.time}</span>
+                                <span style={{ fontSize: 11, opacity: 0.75, marginLeft: 13 }}>{e.time}</span>
                               </Link>
                             ))}
                           </div>
@@ -1216,7 +1218,7 @@ function MissionsPlanningTab({ agentId, theme }) {
               ))}
             </tbody>
           </table>
-          <p className="dim" style={{ marginTop: 10, fontSize: 12 }}>fond rosé = plusieurs missions programmées au même créneau</p>
+          <p className="dim" style={{ marginTop: 12, fontSize: 12 }}>fond rosé = plusieurs missions programmées au même créneau</p>
         </div>
       )}
     </div>
@@ -1303,7 +1305,7 @@ export default function AgentDetail() {
   const visibleTabs = TABS.filter((t) => !t.adminOnly || isAdmin);
 
   return (
-    <div className="page">
+    <div className="page" style={tab === "missions-planning" ? { maxWidth: 1720 } : undefined}>
       <div className="topbar">
         <Link href="/" className="brand">
           <img src="/logo-link.png" alt="Link" />
@@ -1350,6 +1352,7 @@ export default function AgentDetail() {
           <div className="tab-panel">
             {tab === "overview" && <OverviewTab agent={data.agent} agentId={agentId} canAck={isAdmin || data?.viewer?.role === "operateur"} onAction={runAction} />}
             {tab === "missions" && <MissionsTab agentId={agentId} theme={theme} />}
+            {tab === "missions-planning" && <MissionsPlanningTab agentId={agentId} theme={theme} />}
             {tab === "report" && <ReportTab agentId={agentId} theme={theme} />}
             {tab === "planning" && <PlanningTab agent={data.agent} canWrite={canSchedule} onAction={runAction} />}
             {tab === "instructions" && (

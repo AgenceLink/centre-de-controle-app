@@ -34,8 +34,8 @@ export default function PlanningOverview() {
       .catch(() => setZizouMissions([]));
   }, [data]);
 
-  const { events, hours, unscheduled } = useMemo(() => {
-    if (!data) return { events: [], hours: [], unscheduled: [] };
+  const { events, slots, unscheduled } = useMemo(() => {
+    if (!data) return { events: [], slots: [], unscheduled: [] };
     const evs = [];
     const noSchedule = [];
     data.agents.forEach((a) => {
@@ -44,9 +44,10 @@ export default function PlanningOverview() {
         if (!active.length) { noSchedule.push(a); return; }
         active.forEach((m) => {
           String(m.base_times || "").split(",").map((t) => t.trim()).filter(Boolean).forEach((t) => {
-            const h = parseInt(t.split(":")[0], 10);
-            if (isNaN(h)) return;
-            DAY_ORDER.forEach((d) => evs.push({ agent: a, day: d, hour: h, time: t, missionName: m.name || m.mission_key }));
+            const [hh, mm] = t.split(":").map((x) => parseInt(x, 10));
+            if (isNaN(hh)) return;
+            const slot = hh + ((mm || 0) >= 30 ? 0.5 : 0);
+            DAY_ORDER.forEach((d) => evs.push({ agent: a, day: d, slot, time: t, missionName: m.name || m.mission_key }));
           });
         });
         return;
@@ -55,13 +56,14 @@ export default function PlanningOverview() {
       const parsed = parseCron(a.schedule_cron);
       if (!parsed.hours.length) { noSchedule.push(a); return; }
       const days = parsed.days === "*" ? DAY_ORDER : parsed.days;
-      parsed.hours.forEach((h) => days.forEach((d) => evs.push({ agent: a, day: d, hour: h })));
+      parsed.hours.forEach((h) => days.forEach((d) => evs.push({ agent: a, day: d, slot: h, time: `${String(h).padStart(2, "0")}:00` })));
     });
-    const hrs = Array.from(new Set(evs.map((e) => e.hour))).sort((a, b) => a - b);
-    return { events: evs, hours: hrs, unscheduled: noSchedule };
+    const sl = Array.from(new Set(evs.map((e) => e.slot))).sort((a, b) => a - b);
+    return { events: evs, slots: sl, unscheduled: noSchedule };
   }, [data, zizouMissions]);
 
-  const cellEvents = (day, hour) => events.filter((e) => e.day === day && e.hour === hour);
+  const slotLabel = (s) => `${String(Math.floor(s)).padStart(2, "0")}:${s % 1 === 0 ? "00" : "30"}`;
+  const cellEvents = (day, slot) => events.filter((e) => e.day === day && e.slot === slot);
 
   const logout = async () => {
     await fetch("/api/logout", { method: "POST" });
@@ -69,7 +71,7 @@ export default function PlanningOverview() {
   };
 
   return (
-    <div className="page">
+    <div className="page" style={{ maxWidth: 1720 }}>
       <div className="topbar">
         <Link href="/" className="brand">
           <img src="/logo-link.png" alt="Link" />
@@ -111,30 +113,30 @@ export default function PlanningOverview() {
             })}
           </div>
 
-          {hours.length === 0 ? (
+          {slots.length === 0 ? (
             <div className="card block"><p className="dim">aucun agent n'a de planning configuré pour l'instant.</p></div>
           ) : (
-            <div className="card block" style={{ overflowX: "auto" }}>
-              <table className="rpt-table" style={{ minWidth: 1180, borderCollapse: "separate", borderSpacing: 0 }}>
+            <div className="card block" style={{ overflowX: "auto", padding: 20 }}>
+              <table className="rpt-table" style={{ width: "100%", minWidth: 1660, tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}>
                 <thead>
                   <tr>
-                    <th style={{ width: 64 }}></th>
-                    {DAY_ORDER.map((d) => <th key={d} style={{ fontSize: 14, padding: "12px 10px" }}>{DAY_LABELS[d]}</th>)}
+                    <th style={{ width: 84 }}></th>
+                    {DAY_ORDER.map((d) => <th key={d} style={{ fontSize: 16, padding: "16px 12px" }}>{DAY_LABELS[d]}</th>)}
                   </tr>
                 </thead>
                 <tbody>
-                  {hours.map((h) => (
-                    <tr key={h}>
-                      <th style={{ background: "var(--fond)", color: "var(--gris)", fontWeight: 500, whiteSpace: "nowrap", verticalAlign: "top", padding: "14px 10px", fontSize: 13 }}>{h}h</th>
+                  {slots.map((s) => (
+                    <tr key={s}>
+                      <th style={{ background: "var(--fond)", color: "var(--gris)", fontWeight: 500, whiteSpace: "nowrap", verticalAlign: "top", padding: "18px 12px", fontSize: 14 }}>{slotLabel(s)}</th>
                       {DAY_ORDER.map((d) => {
-                        const cell = cellEvents(d, h);
+                        const cell = cellEvents(d, s);
                         const collision = cell.length > 1;
                         return (
-                          <td key={d} style={{ minWidth: 150, minHeight: 56, verticalAlign: "top", padding: "10px 8px", ...(collision ? { background: "rgba(214,69,69,0.06)" } : {}) }}>
+                          <td key={d} style={{ minWidth: 200, height: 72, verticalAlign: "top", padding: "14px 12px", ...(collision ? { background: "rgba(214,69,69,0.06)" } : {}) }}>
                             {cell.length === 0 ? (
                               <span className="dim">—</span>
                             ) : (
-                              <div style={{ display: "flex", flexDirection: "column", flexWrap: "wrap", gap: 6 }}>
+                              <div style={{ display: "flex", flexDirection: "column", flexWrap: "wrap", gap: 8 }}>
                                 {cell.map((e, i) => {
                                   const theme = agentTheme(e.agent.agent_id);
                                   const agentLabel = (e.agent.name || e.agent.agent_id).toLowerCase();
@@ -142,17 +144,17 @@ export default function PlanningOverview() {
                                   return (
                                     <span
                                       key={i}
-                                      title={`${DAY_LABELS[d]} ${e.time || `${h}h`} — ${agentLabel}${e.missionName ? " · " + e.missionName : ""}`}
+                                      title={`${DAY_LABELS[d]} ${e.time} — ${agentLabel}${e.missionName ? " · " + e.missionName : ""}`}
                                       style={{
-                                        display: "inline-flex", flexDirection: "column", alignItems: "flex-start", gap: 1, fontSize: 12,
-                                        background: `${theme.color}18`, color: theme.colorDark, borderRadius: 8, padding: "4px 9px",
+                                        display: "inline-flex", flexDirection: "column", alignItems: "flex-start", gap: 2, fontSize: 13,
+                                        background: `${theme.color}18`, color: theme.colorDark, borderRadius: 8, padding: "6px 11px",
                                       }}
                                     >
-                                      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 600 }}>
-                                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: theme.color, display: "inline-block", flexShrink: 0 }} />
+                                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}>
+                                        <span style={{ width: 7, height: 7, borderRadius: "50%", background: theme.color, display: "inline-block", flexShrink: 0 }} />
                                         {label}
                                       </span>
-                                      <span style={{ fontSize: 10, opacity: 0.75, marginLeft: 11 }}>{e.missionName ? `${agentLabel} · ${e.time}` : "planning agent"}</span>
+                                      <span style={{ fontSize: 11, opacity: 0.75, marginLeft: 13 }}>{e.missionName ? `${agentLabel} · ${e.time}` : "planning agent"}</span>
                                     </span>
                                   );
                                 })}
@@ -165,7 +167,7 @@ export default function PlanningOverview() {
                   ))}
                 </tbody>
               </table>
-              <p className="dim" style={{ marginTop: 10, fontSize: 12 }}>fond rosé = plusieurs agents/missions programmés au même créneau</p>
+              <p className="dim" style={{ marginTop: 12, fontSize: 12 }}>fond rosé = plusieurs agents/missions programmés au même créneau</p>
             </div>
           )}
 
