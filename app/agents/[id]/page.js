@@ -1089,6 +1089,41 @@ function MissionCard({ m, theme }) {
   );
 }
 
+function MissionsScheduleOverview({ missions, theme }) {
+  const slots = useMemo(() => {
+    const scheduled = missions.filter((m) => !m.reference_only && m.active && m.base_times);
+    const byTime = {};
+    scheduled.forEach((m) => {
+      String(m.base_times || "").split(",").map((t) => t.trim()).filter(Boolean).forEach((t) => {
+        if (!byTime[t]) byTime[t] = [];
+        byTime[t].push(m);
+      });
+    });
+    return Object.entries(byTime).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [missions]);
+
+  if (!slots.length) return null;
+
+  return (
+    <div className="card block" style={{ marginBottom: 18 }}>
+      <div className="block-title">🕒 planning des missions</div>
+      <p className="dim" style={{ fontSize: 12, marginBottom: 12 }}>chaque mission se déclenche tous les jours aux horaires ci-dessous (+ relances en cas d'échec, jusqu'à l'heure de cutoff propre à chaque mission).</p>
+      <div className="chip-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
+        {slots.map(([time, ms]) => (
+          <div key={time} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span className="mono" style={{ fontWeight: 600, minWidth: 48, color: theme.colorDark }}>{time}</span>
+            {ms.map((m) => (
+              <Link key={m.mission_key} href={`/missions/${m.mission_key}`} className="stat-chip" style={{ background: `${theme.color}18`, color: theme.colorDark }}>
+                {m.name || m.mission_key}
+              </Link>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function MissionsTab({ agentId, theme }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -1112,6 +1147,7 @@ function MissionsTab({ agentId, theme }) {
         <div className="card block"><p className="dim">aucune mission configurée pour cet agent.</p></div>
       ) : (
         <>
+          <MissionsScheduleOverview missions={data} theme={theme} />
           <div className="grid">
             {terrain.map((m) => <MissionCard key={m.mission_key} m={m} theme={theme} />)}
           </div>

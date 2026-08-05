@@ -14,6 +14,7 @@ export default function PlanningOverview() {
   const router = useRouter();
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+  const [zizouMissions, setZizouMissions] = useState(null);
 
   useEffect(() => {
     fetch("/api/agents", { cache: "no-store" })
@@ -25,11 +26,32 @@ export default function PlanningOverview() {
       .catch((e) => { if (e.message !== "redirect") setError("réseau indisponible"); });
   }, [router]);
 
+  useEffect(() => {
+    if (!data || !data.agents.some((a) => a.agent_id === "zizou")) return;
+    fetch("/api/agents/zizou/missions", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => setZizouMissions(j.ok ? j.missions : []))
+      .catch(() => setZizouMissions([]));
+  }, [data]);
+
   const { events, hours, unscheduled } = useMemo(() => {
     if (!data) return { events: [], hours: [], unscheduled: [] };
     const evs = [];
     const noSchedule = [];
     data.agents.forEach((a) => {
+      if (a.agent_id === "zizou" && zizouMissions) {
+        const active = zizouMissions.filter((m) => m.active && !m.reference_only && m.base_times);
+        if (!active.length) { noSchedule.push(a); return; }
+        active.forEach((m) => {
+          String(m.base_times || "").split(",").map((t) => t.trim()).filter(Boolean).forEach((t) => {
+            const h = parseInt(t.split(":")[0], 10);
+            if (isNaN(h)) return;
+            DAY_ORDER.forEach((d) => evs.push({ agent: a, day: d, hour: h, missionName: m.name || m.mission_key }));
+          });
+        });
+        return;
+      }
+      if (a.agent_id === "zizou" && !zizouMissions) return; // en attente du chargement des missions
       const parsed = parseCron(a.schedule_cron);
       if (!parsed.hours.length) { noSchedule.push(a); return; }
       const days = parsed.days === "*" ? DAY_ORDER : parsed.days;
@@ -37,7 +59,7 @@ export default function PlanningOverview() {
     });
     const hrs = Array.from(new Set(evs.map((e) => e.hour))).sort((a, b) => a - b);
     return { events: evs, hours: hrs, unscheduled: noSchedule };
-  }, [data]);
+  }, [data, zizouMissions]);
 
   const cellEvents = (day, hour) => events.filter((e) => e.day === day && e.hour === hour);
 
@@ -115,17 +137,20 @@ export default function PlanningOverview() {
                               <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                                 {cell.map((e, i) => {
                                   const theme = agentTheme(e.agent.agent_id);
+                                  const label = e.missionName
+                                    ? `${(e.agent.name || e.agent.agent_id).toLowerCase()} · ${e.missionName.toLowerCase()}`
+                                    : (e.agent.name || e.agent.agent_id).toLowerCase();
                                   return (
                                     <span
                                       key={i}
-                                      title={`${DAY_LABELS[d]} ${h}h — ${(e.agent.name || e.agent.agent_id).toLowerCase()}`}
+                                      title={`${DAY_LABELS[d]} ${h}h — ${label}`}
                                       style={{
                                         display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11,
                                         background: `${theme.color}18`, color: theme.colorDark, borderRadius: 999, padding: "2px 8px",
                                       }}
                                     >
                                       <span style={{ width: 6, height: 6, borderRadius: "50%", background: theme.color, display: "inline-block" }} />
-                                      {(e.agent.name || e.agent.agent_id).toLowerCase()}
+                                      {label}
                                     </span>
                                   );
                                 })}
