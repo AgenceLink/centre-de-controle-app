@@ -570,6 +570,17 @@ function PlanningTab({ agent, canWrite, onAction }) {
   const [msg, setMsg] = useState(null);
   const displayName = (agent.name || agent.agent_id).toLowerCase();
 
+  if (agent.agent_id === "zizou") {
+    return (
+      <div className="card block">
+        <div className="block-title">🕒 déclencheurs</div>
+        <p className="dim" style={{ marginTop: 4 }}>
+          Géré via les missions <span className="mono dim">· chaque mission a son propre planning, modifiable depuis l'onglet « 📅 planning missions » ou la fiche de chaque mission</span>
+        </p>
+      </div>
+    );
+  }
+
   const startEdit = () => {
     const parsed = parseCron(agent.schedule_cron);
     setHours(parsed.hours);
