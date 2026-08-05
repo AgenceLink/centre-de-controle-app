@@ -1242,6 +1242,58 @@ function MissionsPlanningTab({ agentId, theme }) {
   );
 }
 
+/* ---------- onglet limites connues ---------- */
+const LIMIT_STATUS_META = {
+  connue: { label: "connue", cls: "bad", icon: "🔴" },
+  reduite: { label: "réduite", cls: "warn", icon: "🟡" },
+  acceptee: { label: "acceptée", cls: "neu", icon: "⚪" },
+  corrigee: { label: "corrigée", cls: "ok", icon: "🟢" },
+};
+const LIMIT_STATUS_ORDER = ["connue", "reduite", "acceptee", "corrigee"];
+
+function LimitsTab({ agent }) {
+  const limitations = agent.known_limitations || [];
+  const grouped = useMemo(() => {
+    const g = {};
+    LIMIT_STATUS_ORDER.forEach((s) => (g[s] = []));
+    limitations.forEach((l) => { (g[l.status] || (g[l.status] = [])).push(l); });
+    return g;
+  }, [limitations]);
+
+  return (
+    <div className="card block">
+      <div className="block-title">⚠️ limites connues</div>
+      <p className="block-desc">
+        Ce que Zizou ne fait pas, ou ne fait que partiellement, aujourd'hui — issu de l'étude de fonctionnement de l'agent et tenu à jour au fil des évolutions, sans avoir à redemander une étude.
+      </p>
+      {limitations.length === 0 && <p className="dim" style={{ marginTop: 10 }}>aucune limite connue enregistrée.</p>}
+      {LIMIT_STATUS_ORDER.map((status) => {
+        const rows = grouped[status];
+        if (!rows || rows.length === 0) return null;
+        const meta = LIMIT_STATUS_META[status];
+        return (
+          <div key={status} style={{ marginTop: 18 }}>
+            <div className="block-sub-title">{meta.icon} {meta.label} ({rows.length})</div>
+            <div className="run-list">
+              {rows.map((l) => (
+                <div key={l.limitation_id} className="run-row">
+                  <div className="run-row-head">
+                    <span className={`v rpt-pill ${meta.cls}`}>{meta.label}</span>
+                    {l.mission_key && <span className="dim mono">{l.mission_key}</span>}
+                    {!l.mission_key && <span className="dim">global</span>}
+                  </div>
+                  <div style={{ fontWeight: 600, marginTop: 6 }}>{l.title}</div>
+                  <div className="run-summary">{l.description}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 const TABS = [
   { id: "overview", label: "🪪 vue d'ensemble" },
   { id: "missions", label: "🎯 missions" },
@@ -1249,6 +1301,7 @@ const TABS = [
   { id: "report", label: "📊 rapport" },
   { id: "planning", label: "🕒 planification" },
   { id: "instructions", label: "📝 instructions" },
+  { id: "limits", label: "⚠️ limites connues" },
   { id: "integrations", label: "🔌 intégrations" },
   { id: "history", label: "🕓 historique", adminOnly: true },
 ];
@@ -1381,6 +1434,7 @@ export default function AgentDetail() {
                 onAction={runAction}
               />
             )}
+            {tab === "limits" && <LimitsTab agent={data.agent} />}
             {tab === "integrations" && <IntegrationsTab agent={data.agent} />}
             {tab === "history" && isAdmin && <HistoryTab agentId={agentId} />}
           </div>
