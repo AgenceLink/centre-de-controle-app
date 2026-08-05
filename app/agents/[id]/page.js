@@ -1294,6 +1294,68 @@ function LimitsTab({ agent }) {
   );
 }
 
+/* ---------- onglet recommandations hebdo ---------- */
+const RECO_STATUS_META = {
+  proposee: { label: "proposée", cls: "neu", icon: "🔵" },
+  suivie: { label: "suivie", cls: "ok", icon: "🟢" },
+  pas_suivie: { label: "pas suivie", cls: "bad", icon: "🔴" },
+  sans_objet: { label: "sans objet", cls: "neu", icon: "⚪" },
+};
+
+function weekLabel(weekId) {
+  const m = /^(\d{4})-S(\d{2})$/.exec(weekId || "");
+  return m ? `semaine ${m[2]} · ${m[1]}` : (weekId || "—");
+}
+
+function RecommendationsTab({ agent, canAck, onAction }) {
+  const recos = agent.weekly_recommendations || [];
+  const [busy, setBusy] = useState(null);
+
+  const setStatus = async (r, status) => {
+    setBusy(r.week_id);
+    await onAction("set_recommendation_status", { week_id: r.week_id, status });
+    setBusy(null);
+  };
+
+  return (
+    <div className="card block">
+      <div className="block-title">💡 recommandations hebdo</div>
+      <p className="block-desc">
+        Historique des recommandations issues de l'analyse hebdo de Zizou (tous les vendredis), pour suivre dans le temps si elles sont suivies d'effet.
+      </p>
+      {recos.length === 0 && <p className="dim" style={{ marginTop: 10 }}>aucune recommandation enregistrée pour l'instant.</p>}
+      <div className="run-list">
+        {recos.map((r) => {
+          const meta = RECO_STATUS_META[r.status] || RECO_STATUS_META.proposee;
+          return (
+            <div key={r.week_id} className="run-row">
+              <div className="run-row-head">
+                <span className="dim mono">{weekLabel(r.week_id)}</span>
+                <span className={`v rpt-pill ${meta.cls}`}>{meta.icon} {meta.label}</span>
+              </div>
+              {r.has_recommendation ? (
+                <>
+                  <div style={{ fontWeight: 600, marginTop: 6 }}>{r.recommendation_text}</div>
+                  {r.summary_text && <div className="run-summary">{r.summary_text}</div>}
+                </>
+              ) : (
+                <div className="dim" style={{ marginTop: 6 }}>aucune recommandation cette semaine{r.summary_text ? ` — ${r.summary_text}` : ""}.</div>
+              )}
+              {canAck && r.has_recommendation && r.status === "proposee" && (
+                <div className="chip-row" style={{ marginTop: 10 }}>
+                  <button className="btn-ghost" disabled={busy === r.week_id} onClick={() => setStatus(r, "suivie")}>🟢 suivie</button>
+                  <button className="btn-ghost" disabled={busy === r.week_id} onClick={() => setStatus(r, "pas_suivie")}>🔴 pas suivie</button>
+                  <button className="btn-ghost" disabled={busy === r.week_id} onClick={() => setStatus(r, "sans_objet")}>⚪ sans objet</button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 const TABS = [
   { id: "overview", label: "🪪 vue d'ensemble" },
   { id: "missions", label: "🎯 missions" },
@@ -1302,6 +1364,7 @@ const TABS = [
   { id: "planning", label: "🕒 planification" },
   { id: "instructions", label: "📝 instructions" },
   { id: "limits", label: "⚠️ limites connues" },
+  { id: "recommendations", label: "💡 recommandations" },
   { id: "integrations", label: "🔌 intégrations" },
   { id: "history", label: "🕓 historique", adminOnly: true },
 ];
@@ -1435,6 +1498,9 @@ export default function AgentDetail() {
               />
             )}
             {tab === "limits" && <LimitsTab agent={data.agent} />}
+            {tab === "recommendations" && (
+              <RecommendationsTab agent={data.agent} canAck={isAdmin || data?.viewer?.role === "operateur"} onAction={runAction} />
+            )}
             {tab === "integrations" && <IntegrationsTab agent={data.agent} />}
             {tab === "history" && isAdmin && <HistoryTab agentId={agentId} />}
           </div>

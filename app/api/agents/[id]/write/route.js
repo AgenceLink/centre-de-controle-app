@@ -3,7 +3,7 @@ import { n8nWrite } from "@/lib/n8n";
 import { getSession } from "@/lib/session";
 import { isAssigned, canDo } from "@/lib/permissions";
 
-const ALLOWED_ACTIONS = ["set_status", "set_schedule", "run_now", "edit_instructions", "set_current_version", "acknowledge_errors"];
+const ALLOWED_ACTIONS = ["set_status", "set_schedule", "run_now", "edit_instructions", "set_current_version", "acknowledge_errors", "set_recommendation_status"];
 
 export async function POST(req, { params }) {
   const session = await getSession();
