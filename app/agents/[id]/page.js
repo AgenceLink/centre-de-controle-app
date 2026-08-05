@@ -1089,41 +1089,6 @@ function MissionCard({ m, theme }) {
   );
 }
 
-function MissionsScheduleOverview({ missions, theme }) {
-  const slots = useMemo(() => {
-    const scheduled = missions.filter((m) => !m.reference_only && m.active && m.base_times);
-    const byTime = {};
-    scheduled.forEach((m) => {
-      String(m.base_times || "").split(",").map((t) => t.trim()).filter(Boolean).forEach((t) => {
-        if (!byTime[t]) byTime[t] = [];
-        byTime[t].push(m);
-      });
-    });
-    return Object.entries(byTime).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [missions]);
-
-  if (!slots.length) return null;
-
-  return (
-    <div className="card block" style={{ marginBottom: 18 }}>
-      <div className="block-title">🕒 planning des missions</div>
-      <p className="dim" style={{ fontSize: 12, marginBottom: 12 }}>chaque mission se déclenche tous les jours aux horaires ci-dessous (+ relances en cas d'échec, jusqu'à l'heure de cutoff propre à chaque mission).</p>
-      <div className="chip-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
-        {slots.map(([time, ms]) => (
-          <div key={time} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span className="mono" style={{ fontWeight: 600, minWidth: 48, color: theme.colorDark }}>{time}</span>
-            {ms.map((m) => (
-              <Link key={m.mission_key} href={`/missions/${m.mission_key}`} className="stat-chip" style={{ background: `${theme.color}18`, color: theme.colorDark }}>
-                {m.name || m.mission_key}
-              </Link>
-            ))}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function MissionsTab({ agentId, theme }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -1147,7 +1112,6 @@ function MissionsTab({ agentId, theme }) {
         <div className="card block"><p className="dim">aucune mission configurée pour cet agent.</p></div>
       ) : (
         <>
-          <MissionsScheduleOverview missions={data} theme={theme} />
           <div className="grid">
             {terrain.map((m) => <MissionCard key={m.mission_key} m={m} theme={theme} />)}
           </div>
@@ -1165,9 +1129,104 @@ function MissionsTab({ agentId, theme }) {
   );
 }
 
+/* ---------- onglet planning missions (grille hebdo, comme l'aperçu tous-agents) ---------- */
+const MP_DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
+const MP_DAY_LABELS = { 1: "lundi", 2: "mardi", 3: "mercredi", 4: "jeudi", 5: "vendredi", 6: "samedi", 0: "dimanche" };
+
+function MissionsPlanningTab({ agentId, theme }) {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetch(`/api/agents/${agentId}/missions`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => (j.ok ? setData(j.missions) : setError(j.error)))
+      .catch(() => setError("réseau indisponible"));
+  }, [agentId]);
+
+  const { events, hours } = useMemo(() => {
+    if (!data) return { events: [], hours: [] };
+    const evs = [];
+    data.filter((m) => m.active && !m.reference_only && m.base_times).forEach((m) => {
+      String(m.base_times || "").split(",").map((t) => t.trim()).filter(Boolean).forEach((t) => {
+        const h = parseInt(t.split(":")[0], 10);
+        if (isNaN(h)) return;
+        MP_DAY_ORDER.forEach((d) => evs.push({ day: d, hour: h, time: t, mission: m }));
+      });
+    });
+    const hrs = Array.from(new Set(evs.map((e) => e.hour))).sort((a, b) => a - b);
+    return { events: evs, hours: hrs };
+  }, [data]);
+
+  const cellEvents = (day, hour) => events.filter((e) => e.day === day && e.hour === hour);
+
+  if (error) return <div className="card block"><p className="form-error">{error}</p></div>;
+  if (!data) return <div className="card block"><p className="dim">chargement…</p></div>;
+
+  return (
+    <div>
+      <p className="dim" style={{ fontSize: 12, marginBottom: 14 }}>chaque mission se déclenche tous les jours aux horaires indiqués (+ relances en cas d'échec, jusqu'à l'heure de cutoff propre à chaque mission). modifiable depuis l'onglet planification de chaque mission.</p>
+      {hours.length === 0 ? (
+        <div className="card block"><p className="dim">aucune mission planifiée pour l'instant.</p></div>
+      ) : (
+        <div className="card block" style={{ overflowX: "auto" }}>
+          <table className="rpt-table" style={{ minWidth: 1180, borderCollapse: "separate", borderSpacing: 0 }}>
+            <thead>
+              <tr>
+                <th style={{ width: 64 }}></th>
+                {MP_DAY_ORDER.map((d) => <th key={d} style={{ fontSize: 14, padding: "12px 10px" }}>{MP_DAY_LABELS[d]}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {hours.map((h) => (
+                <tr key={h}>
+                  <th style={{ background: "var(--fond)", color: "var(--gris)", fontWeight: 500, whiteSpace: "nowrap", verticalAlign: "top", padding: "14px 10px", fontSize: 13 }}>{h}h</th>
+                  {MP_DAY_ORDER.map((d) => {
+                    const cell = cellEvents(d, h);
+                    const collision = cell.length > 1;
+                    return (
+                      <td key={d} style={{ minWidth: 150, minHeight: 56, verticalAlign: "top", padding: "10px 8px", ...(collision ? { background: "rgba(214,69,69,0.06)" } : {}) }}>
+                        {cell.length === 0 ? (
+                          <span className="dim">—</span>
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", flexWrap: "wrap", gap: 6 }}>
+                            {cell.map((e, i) => (
+                              <Link
+                                key={i}
+                                href={`/missions/${e.mission.mission_key}`}
+                                title={`${MP_DAY_LABELS[d]} ${e.time} — ${e.mission.name || e.mission.mission_key}`}
+                                style={{
+                                  display: "inline-flex", flexDirection: "column", alignItems: "flex-start", gap: 1, fontSize: 12,
+                                  background: `${theme.color}18`, color: theme.colorDark, borderRadius: 8, padding: "4px 9px",
+                                }}
+                              >
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 600 }}>
+                                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: theme.color, display: "inline-block", flexShrink: 0 }} />
+                                  {(e.mission.name || e.mission.mission_key).toLowerCase()}
+                                </span>
+                                <span style={{ fontSize: 10, opacity: 0.75, marginLeft: 11 }}>{e.time}</span>
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="dim" style={{ marginTop: 10, fontSize: 12 }}>fond rosé = plusieurs missions programmées au même créneau</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const TABS = [
   { id: "overview", label: "🪪 vue d'ensemble" },
   { id: "missions", label: "🎯 missions" },
+  { id: "missions-planning", label: "📅 planning missions" },
   { id: "report", label: "📊 rapport" },
   { id: "planning", label: "🕒 planification" },
   { id: "instructions", label: "📝 instructions" },

@@ -46,7 +46,7 @@ export default function PlanningOverview() {
           String(m.base_times || "").split(",").map((t) => t.trim()).filter(Boolean).forEach((t) => {
             const h = parseInt(t.split(":")[0], 10);
             if (isNaN(h)) return;
-            DAY_ORDER.forEach((d) => evs.push({ agent: a, day: d, hour: h, missionName: m.name || m.mission_key }));
+            DAY_ORDER.forEach((d) => evs.push({ agent: a, day: d, hour: h, time: t, missionName: m.name || m.mission_key }));
           });
         });
         return;
@@ -115,42 +115,44 @@ export default function PlanningOverview() {
             <div className="card block"><p className="dim">aucun agent n'a de planning configuré pour l'instant.</p></div>
           ) : (
             <div className="card block" style={{ overflowX: "auto" }}>
-              <table className="rpt-table" style={{ minWidth: 720 }}>
+              <table className="rpt-table" style={{ minWidth: 1180, borderCollapse: "separate", borderSpacing: 0 }}>
                 <thead>
                   <tr>
-                    <th></th>
-                    {DAY_ORDER.map((d) => <th key={d}>{DAY_SHORT[d]}</th>)}
+                    <th style={{ width: 64 }}></th>
+                    {DAY_ORDER.map((d) => <th key={d} style={{ fontSize: 14, padding: "12px 10px" }}>{DAY_LABELS[d]}</th>)}
                   </tr>
                 </thead>
                 <tbody>
                   {hours.map((h) => (
                     <tr key={h}>
-                      <th style={{ background: "var(--fond)", color: "var(--gris)", fontWeight: 500, whiteSpace: "nowrap" }}>{h}h</th>
+                      <th style={{ background: "var(--fond)", color: "var(--gris)", fontWeight: 500, whiteSpace: "nowrap", verticalAlign: "top", padding: "14px 10px", fontSize: 13 }}>{h}h</th>
                       {DAY_ORDER.map((d) => {
                         const cell = cellEvents(d, h);
                         const collision = cell.length > 1;
                         return (
-                          <td key={d} style={collision ? { background: "rgba(214,69,69,0.06)" } : undefined}>
+                          <td key={d} style={{ minWidth: 150, minHeight: 56, verticalAlign: "top", padding: "10px 8px", ...(collision ? { background: "rgba(214,69,69,0.06)" } : {}) }}>
                             {cell.length === 0 ? (
                               <span className="dim">—</span>
                             ) : (
-                              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                              <div style={{ display: "flex", flexDirection: "column", flexWrap: "wrap", gap: 6 }}>
                                 {cell.map((e, i) => {
                                   const theme = agentTheme(e.agent.agent_id);
-                                  const label = e.missionName
-                                    ? `${(e.agent.name || e.agent.agent_id).toLowerCase()} · ${e.missionName.toLowerCase()}`
-                                    : (e.agent.name || e.agent.agent_id).toLowerCase();
+                                  const agentLabel = (e.agent.name || e.agent.agent_id).toLowerCase();
+                                  const label = e.missionName ? e.missionName.toLowerCase() : agentLabel;
                                   return (
                                     <span
                                       key={i}
-                                      title={`${DAY_LABELS[d]} ${h}h — ${label}`}
+                                      title={`${DAY_LABELS[d]} ${e.time || `${h}h`} — ${agentLabel}${e.missionName ? " · " + e.missionName : ""}`}
                                       style={{
-                                        display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11,
-                                        background: `${theme.color}18`, color: theme.colorDark, borderRadius: 999, padding: "2px 8px",
+                                        display: "inline-flex", flexDirection: "column", alignItems: "flex-start", gap: 1, fontSize: 12,
+                                        background: `${theme.color}18`, color: theme.colorDark, borderRadius: 8, padding: "4px 9px",
                                       }}
                                     >
-                                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: theme.color, display: "inline-block" }} />
-                                      {label}
+                                      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 600 }}>
+                                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: theme.color, display: "inline-block", flexShrink: 0 }} />
+                                        {label}
+                                      </span>
+                                      <span style={{ fontSize: 10, opacity: 0.75, marginLeft: 11 }}>{e.missionName ? `${agentLabel} · ${e.time}` : "planning agent"}</span>
                                     </span>
                                   );
                                 })}
@@ -163,7 +165,7 @@ export default function PlanningOverview() {
                   ))}
                 </tbody>
               </table>
-              <p className="dim" style={{ marginTop: 10, fontSize: 12 }}>fond rosé = plusieurs agents programmés au même créneau</p>
+              <p className="dim" style={{ marginTop: 10, fontSize: 12 }}>fond rosé = plusieurs agents/missions programmés au même créneau</p>
             </div>
           )}
 
