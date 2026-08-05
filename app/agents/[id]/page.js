@@ -107,6 +107,7 @@ function AgentHeader({ agent, canToggle, canRun, onAction, msg, onGoOverview }) 
   const [confirmRun, setConfirmRun] = useState(false);
   const [busy, setBusy] = useState(false);
   const displayName = (agent.name || agent.agent_id).toLowerCase();
+  const runNowAvailable = agent.agent_id !== "zizou";
 
   const toggleStatus = async () => {
     setBusy(true);
@@ -159,7 +160,7 @@ function AgentHeader({ agent, canToggle, canRun, onAction, msg, onGoOverview }) 
       </div>
 
       <div className="action-row" style={{ marginTop: 14 }}>
-        {canRun && (
+        {canRun && runNowAvailable && (
           <button className="btn-primary" style={{ background: theme.color, border: "none" }} onClick={() => setConfirmRun(true)} disabled={running}>
             <IconPlay size={14} />lancer un run
           </button>
@@ -168,6 +169,11 @@ function AgentHeader({ agent, canToggle, canRun, onAction, msg, onGoOverview }) 
           <IconClock size={14} />voir les runs
         </button>
       </div>
+      {!runNowAvailable && (
+        <p className="dim" style={{ marginTop: 10, fontSize: 13 }}>
+          Run manuel géré par mission <span className="mono dim">· voir l'onglet « 📅 planning missions » ou la fiche de chaque mission</span>
+        </p>
+      )}
       {msg && <p className={msg.ok ? "form-ok" : "form-error"} style={{ marginTop: 8 }}>{msg.text}</p>}
 
       {confirmToggle && (

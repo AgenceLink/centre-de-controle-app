@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { agentTheme } from "@/lib/agentTheme";
-import { IconCheck, IconX, IconRefresh, IconClock, IconPlus } from "@/lib/icons";
+import { IconCheck, IconX, IconRefresh, IconClock, IconPlus, IconPlay } from "@/lib/icons";
 
 function timeAgo(iso) {
   if (!iso) return "—";
@@ -529,6 +529,8 @@ export default function MissionDetail() {
   const [error, setError] = useState(null);
   const [msg, setMsg] = useState(null);
   const [tab, setTab] = useState("overview");
+  const [confirmRun, setConfirmRun] = useState(false);
+  const [runBusy, setRunBusy] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -580,8 +582,16 @@ export default function MissionDetail() {
   const perms = data?.viewer?.permissions;
   const canInstructions = isAdmin || perms?.instructions === true;
   const canSchedule = isAdmin || perms?.schedule === true;
+  const canRun = isAdmin || perms?.run === true;
   const theme = data ? agentTheme(data.mission.agent_id) : null;
   const missionName = data ? (data.mission.name || data.mission.mission_key) : "";
+
+  const runMissionNow = async () => {
+    setRunBusy(true);
+    await runAction("set_mission_run_now", {});
+    setRunBusy(false);
+    setConfirmRun(false);
+  };
 
   return (
     <div className="page">
@@ -620,8 +630,31 @@ export default function MissionDetail() {
               {missionName}
               {data.mission.reference_only && <span className="role-chip">référence</span>}
             </div>
+            {!data.mission.reference_only && canRun && (
+              <div className="action-row" style={{ marginTop: 12 }}>
+                <button
+                  className="btn-primary"
+                  style={{ background: theme.color, border: "none" }}
+                  onClick={() => setConfirmRun(true)}
+                  disabled={data.mission.is_running}
+                >
+                  <IconPlay size={14} />lancer cette mission
+                </button>
+              </div>
+            )}
             {msg && <p className={msg.ok ? "form-ok" : "form-error"} style={{ marginTop: 8 }}>{msg.text}</p>}
           </div>
+
+          {confirmRun && (
+            <ConfirmModal
+              title="lancer cette mission maintenant"
+              message={`Retape le nom de la mission (« ${missionName} ») pour la lancer au prochain réveil de la coquille. Pas de notification Slack pour cette action.`}
+              confirmWord={missionName}
+              busy={runBusy}
+              onConfirm={runMissionNow}
+              onCancel={() => setConfirmRun(false)}
+            />
+          )}
 
           <div className="tab-bar" style={{ marginTop: 20 }}>
             {TABS.map((t) => (
