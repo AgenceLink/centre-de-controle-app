@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { agentTheme } from "@/lib/agentTheme";
-import { parseCron, buildCron } from "@/lib/schedule";
+import { parseCron, buildCron, parseBaseDays, isMissionAgent } from "@/lib/schedule";
 import {
   IconPlay, IconPause, IconRefresh, IconCheck, IconClock, IconPlus, IconX,
 } from "@/lib/icons";
@@ -107,7 +107,8 @@ function AgentHeader({ agent, canToggle, canRun, onAction, msg, onGoOverview }) 
   const [confirmRun, setConfirmRun] = useState(false);
   const [busy, setBusy] = useState(false);
   const displayName = (agent.name || agent.agent_id).toLowerCase();
-  const runNowAvailable = agent.agent_id !== "zizou";
+  // agents pilotés par missions : le run manuel se demande mission par mission (fiche de la mission)
+  const runNowAvailable = !isMissionAgent(agent.agent_id);
 
   const toggleStatus = async () => {
     setBusy(true);
@@ -576,7 +577,7 @@ function PlanningTab({ agent, canWrite, onAction }) {
   const [msg, setMsg] = useState(null);
   const displayName = (agent.name || agent.agent_id).toLowerCase();
 
-  if (agent.agent_id === "zizou") {
+  if (isMissionAgent(agent.agent_id)) {
     return (
       <div className="card block">
         <div className="block-title">🕒 déclencheurs</div>
@@ -1098,7 +1099,7 @@ function MissionCard({ m, theme }) {
         {statusLabel}
       </span>
       <div className="chip-row">
-        <span className="stat-chip"><IconClock size={12} />{m.reference_only ? "pas de planning" : (m.base_times || "—")}</span>
+        <span className="stat-chip"><IconClock size={12} />{m.reference_only ? "pas de planning" : `${parseBaseDays(m.base_days).short} · ${m.base_times || "—"}`}</span>
         <span className="stat-chip">{last ? timeAgo(last.started_at) : "jamais exécutée"}</span>
         <span className="stat-chip mono">v{m.instructions_version ?? "—"}</span>
       </div>
@@ -1169,7 +1170,9 @@ function MissionsPlanningTab({ agentId, theme }) {
         const [hh, mm] = t.split(":").map((x) => parseInt(x, 10));
         if (isNaN(hh)) return;
         const slot = hh + ((mm || 0) >= 30 ? 0.5 : 0);
-        MP_DAY_ORDER.forEach((d) => evs.push({ day: d, slot, time: t, mission: m }));
+        // seulement les jours de planification de la mission (base_days), pas toute la semaine
+        const plan = parseBaseDays(m.base_days);
+        plan.days.forEach((d) => evs.push({ day: d, slot, time: t, mission: m, monthly: plan.nth[d] ? plan.short : "" }));
       });
     });
     const sl = Array.from(new Set(evs.map((e) => e.slot))).sort((a, b) => a - b);
@@ -1184,7 +1187,7 @@ function MissionsPlanningTab({ agentId, theme }) {
 
   return (
     <div>
-      <p className="dim" style={{ fontSize: 12, marginBottom: 14 }}>chaque mission se déclenche tous les jours aux horaires indiqués (+ relances en cas d'échec, jusqu'à l'heure de cutoff propre à chaque mission). modifiable depuis l'onglet planification de chaque mission.</p>
+      <p className="dim" style={{ fontSize: 12, marginBottom: 14 }}>chaque mission se déclenche les jours et aux horaires indiqués (+ relances en cas d'échec le même jour, jusqu'à l'heure de cutoff propre à chaque mission ; une mission limitée à certains jours ne rattrape pas son créneau le lendemain). modifiable depuis l'onglet planification de chaque mission.</p>
       {slots.length === 0 ? (
         <div className="card block"><p className="dim">aucune mission planifiée pour l'instant.</p></div>
       ) : (
@@ -1213,7 +1216,7 @@ function MissionsPlanningTab({ agentId, theme }) {
                               <Link
                                 key={i}
                                 href={`/missions/${e.mission.mission_key}`}
-                                title={`${MP_DAY_LABELS[d]} ${e.time} — ${e.mission.name || e.mission.mission_key}`}
+                                title={`${e.monthly || MP_DAY_LABELS[d]} ${e.time} — ${e.mission.name || e.mission.mission_key}`}
                                 style={{
                                   display: "inline-flex", flexDirection: "column", alignItems: "flex-start", gap: 2, fontSize: 13,
                                   background: `${theme.color}18`, color: theme.colorDark, borderRadius: 8, padding: "6px 11px",
@@ -1223,7 +1226,7 @@ function MissionsPlanningTab({ agentId, theme }) {
                                   <span style={{ width: 7, height: 7, borderRadius: "50%", background: theme.color, display: "inline-block", flexShrink: 0 }} />
                                   {(e.mission.name || e.mission.mission_key).toLowerCase()}
                                 </span>
-                                <span style={{ fontSize: 11, opacity: 0.75, marginLeft: 13 }}>{e.time}</span>
+                                <span style={{ fontSize: 11, opacity: 0.75, marginLeft: 13 }}>{e.monthly ? `${e.time} · ${e.monthly}` : e.time}</span>
                               </Link>
                             ))}
                           </div>
