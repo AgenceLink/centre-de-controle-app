@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { agentTheme } from "@/lib/agentTheme";
-import { parseCron } from "@/lib/schedule";
+import { parseCron, parseBaseDays, isMissionAgent } from "@/lib/schedule";
 
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 const DAY_LABELS = { 1: "lundi", 2: "mardi", 3: "mercredi", 4: "jeudi", 5: "vendredi", 6: "samedi", 0: "dimanche" };
@@ -14,7 +14,8 @@ export default function PlanningOverview() {
   const router = useRouter();
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
-  const [zizouMissions, setZizouMissions] = useState(null);
+  // missions des agents pilotés par missions (zizou, nino…), par agent_id ; null tant que pas chargé
+  const [agentMissions, setAgentMissions] = useState(null);
 
   useEffect(() => {
     fetch("/api/agents", { cache: "no-store" })
@@ -27,11 +28,15 @@ export default function PlanningOverview() {
   }, [router]);
 
   useEffect(() => {
-    if (!data || !data.agents.some((a) => a.agent_id === "zizou")) return;
-    fetch("/api/agents/zizou/missions", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((j) => setZizouMissions(j.ok ? j.missions : []))
-      .catch(() => setZizouMissions([]));
+    if (!data) return;
+    const ids = data.agents.map((a) => a.agent_id).filter(isMissionAgent);
+    if (!ids.length) { setAgentMissions({}); return; }
+    Promise.all(ids.map((id) =>
+      fetch(`/api/agents/${id}/missions`, { cache: "no-store" })
+        .then((r) => r.json())
+        .then((j) => [id, j.ok ? j.missions : []])
+        .catch(() => [id, []])
+    )).then((pairs) => setAgentMissions(Object.fromEntries(pairs)));
   }, [data]);
 
   const { events, slots, unscheduled } = useMemo(() => {
@@ -39,20 +44,22 @@ export default function PlanningOverview() {
     const evs = [];
     const noSchedule = [];
     data.agents.forEach((a) => {
-      if (a.agent_id === "zizou" && zizouMissions) {
-        const active = zizouMissions.filter((m) => m.active && !m.reference_only && m.base_times);
+      if (isMissionAgent(a.agent_id)) {
+        if (!agentMissions) return; // en attente du chargement des missions
+        const active = (agentMissions[a.agent_id] || []).filter((m) => m.active && !m.reference_only && m.base_times);
         if (!active.length) { noSchedule.push(a); return; }
         active.forEach((m) => {
+          // seulement les jours de planification de la mission (base_days)
+          const plan = parseBaseDays(m.base_days);
           String(m.base_times || "").split(",").map((t) => t.trim()).filter(Boolean).forEach((t) => {
             const [hh, mm] = t.split(":").map((x) => parseInt(x, 10));
             if (isNaN(hh)) return;
             const slot = hh + ((mm || 0) >= 30 ? 0.5 : 0);
-            DAY_ORDER.forEach((d) => evs.push({ agent: a, day: d, slot, time: t, missionName: m.name || m.mission_key }));
+            plan.days.forEach((d) => evs.push({ agent: a, day: d, slot, time: t, missionName: m.name || m.mission_key, monthly: plan.nth[d] ? plan.short : "" }));
           });
         });
         return;
       }
-      if (a.agent_id === "zizou" && !zizouMissions) return; // en attente du chargement des missions
       const parsed = parseCron(a.schedule_cron);
       if (!parsed.hours.length) { noSchedule.push(a); return; }
       const days = parsed.days === "*" ? DAY_ORDER : parsed.days;
@@ -60,7 +67,7 @@ export default function PlanningOverview() {
     });
     const sl = Array.from(new Set(evs.map((e) => e.slot))).sort((a, b) => a - b);
     return { events: evs, slots: sl, unscheduled: noSchedule };
-  }, [data, zizouMissions]);
+  }, [data, agentMissions]);
 
   const slotLabel = (s) => `${String(Math.floor(s)).padStart(2, "0")}:${s % 1 === 0 ? "00" : "30"}`;
   const cellEvents = (day, slot) => events.filter((e) => e.day === day && e.slot === slot);
@@ -154,7 +161,7 @@ export default function PlanningOverview() {
                                         <span style={{ width: 7, height: 7, borderRadius: "50%", background: theme.color, display: "inline-block", flexShrink: 0 }} />
                                         {label}
                                       </span>
-                                      <span style={{ fontSize: 11, opacity: 0.75, marginLeft: 13 }}>{e.missionName ? `${agentLabel} · ${e.time}` : "planning agent"}</span>
+                                      <span style={{ fontSize: 11, opacity: 0.75, marginLeft: 13 }}>{e.missionName ? `${agentLabel} · ${e.time}${e.monthly ? ` · ${e.monthly}` : ""}` : "planning agent"}</span>
                                     </span>
                                   );
                                 })}
