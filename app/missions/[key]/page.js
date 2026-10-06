@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { agentTheme } from "@/lib/agentTheme";
 import { IconCheck, IconX, IconRefresh, IconClock, IconPlus, IconPlay } from "@/lib/icons";
+import { parseBaseDays, buildBaseDays } from "@/lib/schedule";
 
 function timeAgo(iso) {
   if (!iso) return "—";
@@ -122,19 +123,32 @@ function parseTimes(baseTimes) {
   return String(baseTimes || "").split(",").map((t) => t.trim()).filter(Boolean);
 }
 const MINUTE_OPTIONS = ["00", "15", "30", "45"];
+const DAY_CHIPS_M = [
+  { d: 1, l: "L" }, { d: 2, l: "M" }, { d: 3, l: "M" }, { d: 4, l: "J" },
+  { d: 5, l: "V" }, { d: 6, l: "S" }, { d: 0, l: "D" },
+];
 const HOUR_OPTIONS_M = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
 
 function MissionPlanningPreview({ mission }) {
   const times = parseTimes(mission.base_times);
   if (mission.reference_only) return <p className="dim">mission de référence — pas de planning propre, jamais déclenchée directement.</p>;
   if (!times.length) return <p className="dim">aucun horaire configuré</p>;
+  const plan = parseBaseDays(mission.base_days);
   return (
     <div>
       <div className="chip-row">
+        {DAY_CHIPS_M.map((c) => (
+          <span key={c.d} className={`chip day ${plan.days.includes(c.d) ? "selected" : ""}`} style={{ cursor: "default" }}>{c.l}</span>
+        ))}
+      </div>
+      <div className="chip-row" style={{ marginTop: 8 }}>
         {times.map((t) => <span key={t} className="chip selected" style={{ cursor: "default" }}>{t}</span>)}
       </div>
       <div className="schedule-preview" style={{ marginTop: 12 }}>
-        🔁 retry {mission.retry_interval_minutes || "—"} min jusqu'à {mission.retry_cutoff || "—"}
+        📅 {plan.label.charAt(0).toUpperCase() + plan.label.slice(1)} à {times.join(", ")}
+      </div>
+      <div className="schedule-preview" style={{ marginTop: 6 }}>
+        🔁 retry {mission.retry_interval_minutes || "—"} min jusqu'à {mission.retry_cutoff || "—"}{plan.all ? "" : ", le jour même uniquement"}
       </div>
     </div>
   );
@@ -143,6 +157,7 @@ function MissionPlanningPreview({ mission }) {
 function PlanningTab({ mission, missionName, canWrite, onAction }) {
   const [editing, setEditing] = useState(false);
   const [times, setTimes] = useState([]);
+  const [days, setDays] = useState([]);
   const [addHour, setAddHour] = useState("07");
   const [addMinute, setAddMinute] = useState("00");
   const [retryInterval, setRetryInterval] = useState(60);
@@ -151,7 +166,13 @@ function PlanningTab({ mission, missionName, canWrite, onAction }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
 
+  // jours de planification : un réglage mensuel (ex. 1er lundi du mois) n'est pas éditable par cases
+  const plan = parseBaseDays(mission.base_days);
+  const monthly = Object.keys(plan.nth).length > 0;
+  const toggleDay = (d) => setDays((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]));
+
   const startEdit = () => {
+    setDays(plan.days);
     setTimes(parseTimes(mission.base_times));
     setRetryInterval(mission.retry_interval_minutes || 60);
     setRetryCutoff(mission.retry_cutoff || "17:00");
@@ -166,7 +187,10 @@ function PlanningTab({ mission, missionName, canWrite, onAction }) {
 
   const save = async () => {
     setBusy(true);
-    const ok = await onAction("set_mission_schedule", { base_times: times.join(","), retry_interval_minutes: Number(retryInterval), retry_cutoff: retryCutoff });
+    const payload = { base_times: times.join(","), retry_interval_minutes: Number(retryInterval), retry_cutoff: retryCutoff };
+    // base_days n'est envoyé que s'il a changé : sinon le registre garde sa valeur telle quelle
+    if (!monthly && buildBaseDays(days) !== buildBaseDays(plan.days)) payload.base_days = buildBaseDays(days);
+    const ok = await onAction("set_mission_schedule", payload);
     setBusy(false);
     setConfirmSave(false);
     if (ok) { setEditing(false); setMsg({ ok: true, text: "déclencheurs mis à jour" }); }
@@ -195,6 +219,19 @@ function PlanningTab({ mission, missionName, canWrite, onAction }) {
       {editing ? (
         <div className="editor">
           <div className="field">
+            <label>jours</label>
+            {monthly ? (
+              <p className="dim" style={{ fontSize: 13 }}>{plan.label} — réglage mensuel, modifiable par l'équipe technique</p>
+            ) : (
+              <div className="chip-row">
+                {DAY_CHIPS_M.map((c) => (
+                  <button key={c.d} type="button" className={`chip day ${days.includes(c.d) ? "selected" : ""}`} onClick={() => toggleDay(c.d)}>{c.l}</button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="field" style={{ marginTop: 14 }}>
             <label>horaires de déclenchement</label>
             <div className="chip-row">
               {times.length === 0 && <span className="dim" style={{ fontSize: 13 }}>aucun horaire — ajoute au moins un créneau</span>}
@@ -238,7 +275,7 @@ function PlanningTab({ mission, missionName, canWrite, onAction }) {
 
           <div className="modal-actions">
             <button className="btn-ghost" onClick={() => setEditing(false)} disabled={busy}>annuler</button>
-            <button className="btn-primary" onClick={() => setConfirmSave(true)} disabled={times.length === 0 || busy}>enregistrer</button>
+            <button className="btn-primary" onClick={() => setConfirmSave(true)} disabled={times.length === 0 || (!monthly && days.length === 0) || busy}>enregistrer</button>
           </div>
         </div>
       ) : (
